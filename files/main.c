@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include "processing.h"
 
-const int LEN = 100;
-const int GRUPO = 1;
+const int LEN = 8;
+const int GRUPO = 4;
 
 int main() {
     
