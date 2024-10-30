@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
 
     if (rank == 0) { // Node N1 (rank 0)
         // Prompt the user for the vector size
-        printf("Enter the size of the vector: ");
+        printf("N1: Enter the size of the vector: ");
         fflush(stdout);
         scanf("%d", &N);
 
@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
         // Send the sum back to N2 (rank 1)
         MPI_Send(&sum, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
-        printf("Sum of the first %d numbers sent back to node N2.\n", N);
+        printf("N1: Sum of the first %d numbers sent back to node N2.\n", N);
     } 
     else if (rank == 1) { // Node N2 (rank 1)
         // Receive the vector size from N1 (rank 0)
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
 
         // Receive the sum from N1 (rank 0)
         MPI_Recv(&sum, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("The sum of the first %d numbers is: %d\n", N, sum);
+        printf("N2: The sum of the first %d numbers is: %d\n", N, sum);
     }
 
     // Finalize the MPI environment for all ranks
