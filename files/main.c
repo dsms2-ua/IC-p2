@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "processing.h"
-#include <time.h>
+#include <sys/time.h>
 
-const int LEN = 8;
+const int LEN = 100;
 const int GRUPO = 4;
 
 int main() {
@@ -15,18 +15,19 @@ int main() {
     for (int i = 0; i < LEN; i++) { vector[i] = i + 1; }
 
     //We calculate the processing time
-    clock_t start = clock();
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
 
     process_block1(GRUPO, vector, LEN, 0, LEN-1 );
     process_block2(GRUPO, vector, LEN, 0, LEN-1 );
     process_block3(GRUPO, vector, LEN, 0, LEN-1 );
     process_block4(GRUPO, vector, LEN, 0, LEN-1 );
 
-    clock_t end = clock();
+    gettimeofday(&end, NULL);
 
-    double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+    double time_spent = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
     
-    printf("Processing time: %f\n", time_spent);
+    printf("Processing time: %f seconds\n", time_spent);
     printf ("Firma: 0x%08X\n", firma);
     free(vector);
 
