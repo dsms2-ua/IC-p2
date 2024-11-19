@@ -3,7 +3,7 @@
 #include "processing.h"
 #include <sys/time.h>
 
-const int LEN = 100;
+const int LEN = 1600;
 const int GRUPO = 4;
 
 int main() {
@@ -27,7 +27,7 @@ int main() {
 
     double time_spent = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
     
-    printf("Processing time: %f seconds\n", time_spent);
+    printf("Processing time: %f seconds for %d components\n", time_spent, LEN);
     printf ("Firma: 0x%08X\n", firma);
     free(vector);
 

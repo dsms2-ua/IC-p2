@@ -7,57 +7,74 @@ To calculate efficiency: Ep = Sp/P
 Where: P is the number of processors
 */
 
-#include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <mpi.h>
 #include "processing.h"
+#include <sys/time.h>
 
 const int LEN = 100;
 const int GRUPO = 4;
 
-int main(int argc, char *argv[]) {
-    int rank, size;
-    int firma;
-    int *vector = (int *) malloc(sizeof(int) * LEN);
+void process_blocks(int grupo, int* vector, int len, int start, int end) {
+    process_block1(grupo, vector, len, start, end);
+    process_block2(grupo, vector, len, start, end);
+    process_block3(grupo, vector, len, start, end);
+    process_block4(grupo, vector, len, start, end);
+}
 
-    // Inicializar MPI
+int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
+
+    int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    // Proceso principal inicializa el vector
+    int firma = 0;
+    if (rank == 0) firma = init_lab2(GRUPO);
+
+    // Broadcast the signature to all processes
+    MPI_Bcast(&firma, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    // Allocate the vector and distribute work
+    int* vector = NULL;
     if (rank == 0) {
-        for (int i = 0; i < LEN; i++) {
-            vector[i] = i + 1;
-        }
-        firma = init_lab2(GRUPO);  // Inicializar una vez en el proceso principal
+        vector = (int*)malloc(sizeof(int) * LEN);
+        for (int i = 0; i < LEN; i++) vector[i] = i + 1;
     }
 
-    // Compartir el vector con todos los procesos
+    // Broadcast the vector to all processes
+    if (rank != 0) vector = (int*)malloc(sizeof(int) * LEN);
     MPI_Bcast(vector, LEN, MPI_INT, 0, MPI_COMM_WORLD);
 
-    // Medir el tiempo paralelo
-    double start_time = MPI_Wtime();
+    // Calculate the work per process
+    int chunk_size = LEN / size;
+    int start = rank * chunk_size;
+    int end = (rank == size - 1) ? LEN - 1 : start + chunk_size - 1;
 
-    // Cada proceso ejecuta su función en paralelo
-    if (rank == 0) process_block1(GRUPO, vector, LEN, 0, LEN - 1);
-    if (rank == 1) process_block2(GRUPO, vector, LEN, 0, LEN - 1);
-    if (rank == 2) process_block3(GRUPO, vector, LEN, 0, LEN - 1);
-    if (rank == 3) process_block4(GRUPO, vector, LEN, 0, LEN - 1);
+    // Measure the parallel execution time
+    struct timeval start_time, end_time;
+    MPI_Barrier(MPI_COMM_WORLD); // Synchronize before timing
+    gettimeofday(&start_time, NULL);
 
-    // Finalizar el tiempo paralelo
-    double end_time = MPI_Wtime();
-    double parallel_time = end_time - start_time;
+    // Each process handles its chunk
+    process_blocks(GRUPO, vector, LEN, start, end);
 
-    // El proceso 0 muestra los resultados
+    MPI_Barrier(MPI_COMM_WORLD); // Synchronize after processing
+    gettimeofday(&end_time, NULL);
+
+    double local_time = (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_usec - start_time.tv_usec) / 1000000.0;
+
+    // Gather the times at process 0
+    double max_time;
+    MPI_Reduce(&local_time, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+
     if (rank == 0) {
-        printf("Parallel processing time: %f seconds\n", parallel_time);
+        printf("Processing time (parallel): %f seconds for %d components\n", max_time, LEN);
         printf("Firma: 0x%08X\n", firma);
     }
 
     free(vector);
-
-    // Finalizar MPI
     MPI_Finalize();
     return 0;
 }
